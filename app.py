@@ -19,10 +19,6 @@ app.secret_key = os.environ.get('SECRET_KEY').encode()
 
 api = Api(app)
 
-@app.before_first_request
-def create_tables():
-    db.create_all()
-
 jwt = JWT(app, authenticate, identity)  # for user authentication  /auth
 
 api.add_resource(Store, '/store/<string:name>')
