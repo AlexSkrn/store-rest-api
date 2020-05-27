@@ -17,11 +17,19 @@ class ItemModel(db.Model):
 
     def to_json(self):
         """Return a json representation of the object."""
-        return {'name': self.name, 'price': self.price, 'store_id': self.store_id}
+        return {'id': self.id,
+                'name': self.name,
+                'price': self.price,
+                'store_id': self.store_id
+                }
 
     @classmethod
     def find_by_name(cls, name):
         return cls.query.filter_by(name=name).first()  # 'SELECT * FROM items WHERE name=name LIMIT 1'
+
+    @classmethod
+    def find_all(cls):
+        return cls.query.all()
 
     def save_to_db(self):
         """Upsert (update or insert) data into db."""

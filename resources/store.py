@@ -25,14 +25,12 @@ class Store(Resource):
     def delete(self, name):
         store = StoreModel.find_by_name(name)
         if store:
-            store.delete_from_db() # 'DELETE FROM items WHERE name=?'
+            store.delete_from_db()  # 'DELETE FROM items WHERE name=?'
 
         return {'message': 'Store deleted'}
-
-
 
 
 class StoreList(Resource):
     def get(self):
         # return {'items': list(map(lambda x: x.to_json(), ItemModel.query.all()))}
-        return {'stores': [store.to_json() for store in StoreModel.query.all()]}
+        return {'stores': [store.to_json() for store in StoreModel.find_all()]}

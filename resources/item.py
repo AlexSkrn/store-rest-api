@@ -1,7 +1,13 @@
 from flask_restful import reqparse
 from flask_restful import Resource
 
-from flask_jwt import jwt_required
+from flask_jwt_extended import (
+    jwt_required,
+    get_jwt_claims,
+    jwt_optional,
+    fresh_jwt_required
+    )
+from flask_jwt_extended import get_jwt_identity
 
 from models.item import ItemModel
 
@@ -19,19 +25,20 @@ class Item(Resource):
                         help='Every item needs a store id'
                         )
 
-    @jwt_required()
+    @jwt_required  # not jwt_required() now compared to flask-jwt
     def get(self, name):
         item = ItemModel.find_by_name(name)
         if item:
             return item.to_json(), 200
         return {'Message': 'Item not found'}, 404  # not found
 
+    @fresh_jwt_required
     def post(self, name):
         if ItemModel.find_by_name(name):
             return {'Message:': f'An item with name {name} already exists'}, 400  # bad request
 
         data = type(self).parser.parse_args()
-        item = ItemModel(name, data['price'], data['store_id'])
+        item = ItemModel(name, **data)
         try:
             item.save_to_db()
         except:
@@ -39,10 +46,14 @@ class Item(Resource):
 
         return item.to_json(), 201
 
+    @jwt_required
     def delete(self, name):
+        claims = get_jwt_claims()
+        if not claims['is_admin']:
+            return {'Message': 'Admin privilege required'}, 401
         item = ItemModel.find_by_name(name)
         if item:
-            item.delete_from_db() # 'DELETE FROM items WHERE name=?'
+            item.delete_from_db()  # 'DELETE FROM items WHERE name=?'
 
         return {'message': 'Item deleted'}
 
@@ -62,6 +73,14 @@ class Item(Resource):
 
 
 class ItemList(Resource):
+    @jwt_optional
     def get(self):
-        # return {'items': list(map(lambda x: x.to_json(), ItemModel.query.all()))}
-        return {'items': [item.to_json() for item in ItemModel.query.all()]}
+        user_id = get_jwt_identity()
+        print(user_id)
+        items = [item.to_json() for item in ItemModel.find_all()]
+        if user_id:
+            return {'items': items}, 200
+        return {
+                'items': [item['name'] for item in items],
+                'Message': 'More data available if you log in'
+                }, 200
